@@ -1,32 +1,36 @@
-name: GitHub Pages Deploy
+name: Build APK and Deploy to Master Branch
 
-# 触发条件：在 push 到 master 分支后
 on:
   push:
     branches:
       - master
 
-# 任务
 jobs:
   build-and-deploy:
-    # 服务器环境：最新版 Ubuntu
     runs-on: ubuntu-latest
     steps:
-      # 拉取代码
       - name: Checkout
         uses: actions/checkout@v2.3.1
         with:
           persist-credentials: false
 
-      # 生成静态文件
       - name: Build
-        run: npm install && npm run build
+        run: |
+          npm install
+          npm run build
 
-      # 部署到 GitHub Pages
-      - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@3.7.1
-        with:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-          BRANCH: gh-pages
-          FOLDER: dist
-          CLEAN: true
+      - name: Build APK
+        run: ./gradlew assembleDebug
+          # 在这里添加生成 APK 的命令，例如使用 Gradle 或其他构建工具
+          # 示例：./gradlew assembleDebug
+
+      - name: Move APK
+        run: mv app/build/outputs/apk/debug/app-debug.apk app.apk
+
+      - name: Commit and Push APK to Master Branch
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add app.apk
+          git commit -m "Add debug APK"
+          git push origin HEAD:master
